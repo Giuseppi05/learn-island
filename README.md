@@ -48,7 +48,18 @@ Una sola página HTML con [three.js r128](https://threejs.org/) (MeshToonMateria
 
 ## Rama de prueba: modelos KayKit
 
-En la rama `prueba-modelos-kaykit` los personajes, árboles, rocas, casas y parte de la comida del mercado usan modelos de los packs **KayKit** de Kay Lousberg ([kaylousberg.com](https://kaylousberg.com)), con licencia CC0. Están en `assets/kaykit/` junto con su licencia. Si los modelos no cargan, el juego vuelve a las piezas procedurales de la rama `main`.
+En la rama `prueba-modelos-kaykit` todo el mundo usa los packs **KayKit** de Kay Lousberg ([kaylousberg.com](https://kaylousberg.com)), con licencia CC0, para mantener un solo estilo:
+
+| Elemento | Pack KayKit |
+| --- | --- |
+| Estudiante, compañeros, casera, docente y guía Amaru | Adventurers (con animaciones de reposo, caminar, correr, saltar y celebrar) |
+| Árboles, rocas, casas, molino, pozo, puestos del mercado y nubes | Medieval Hexagon |
+| Arcos de las puertas, santuarios de los Apus, faroles, bancos, pinos de otoño y zapallos | Halloween Bits |
+| Estandartes de estado, cofre dorado, monedas y antorchas | Dungeon Remastered |
+| Mesa, sillas, estantes y libros del Aula AR | Furniture Bits |
+| Alimentos, cajas y mostradores del mercado | Restaurant Bits |
+
+Los productos del mercado cambian a los alimentos disponibles en los packs (zapallo, tomate, zanahoria, papa, cebolla, lechuga, pan, jamón y queso). Las llamas se retiraron porque KayKit no incluye animales; las montañas lejanas siguen siendo procedurales. Los modelos están en `assets/kaykit/` junto con su licencia. Si no cargan, el juego vuelve a las piezas procedurales.
 
 Para probarla en local hace falta un servidor, porque el navegador no carga modelos desde `file://`:
 

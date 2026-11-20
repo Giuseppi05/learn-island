@@ -458,14 +458,15 @@ function buildHolo(rep,total,marked){
 }
 
 /* ---------- Mercado (CU-VR-02) ---------- */
-const PROD={pina:"Piña",mango:"Mango",platano:"Plátano",papa:"Papa",choclo:"Choclo",palta:"Palta",pan:"Pan",leche:"Leche",queso:"Queso"};
-const UNIT={pina:"unidad",mango:"unidad",platano:"mano",papa:"kg",choclo:"unidad",palta:"kg",pan:"bolsa",leche:"litro",queso:"unidad"};
+// Rama KayKit: los productos usan los alimentos disponibles en los packs (Restaurant y Halloween)
+const PROD={pina:"Zapallo",mango:"Tomate",platano:"Zanahoria",papa:"Papa",choclo:"Cebolla",palta:"Lechuga",pan:"Pan",leche:"Jamón",queso:"Queso"};
+const UNIT={pina:"unidad",mango:"kg",platano:"kg",papa:"kg",choclo:"kg",palta:"unidad",pan:"bolsa",leche:"porción",queso:"unidad"};
 const BASE={pina:400,mango:150,platano:300,papa:300,choclo:200,palta:500,pan:120,leche:350,queso:1000};
 const LEVELS=[
   {grado:"2.º · sumas",tipo:"exacto",v:[{items:["pina","papa"],p:{pina:400,papa:300}},{items:["mango","choclo"],p:{mango:200,choclo:300}}]},
   {grado:"3.º–4.º · vuelto",tipo:"vuelto",paga:1000,v:[{items:["choclo","palta"],p:{choclo:200,palta:500}},{items:["platano","papa"],p:{platano:300,papa:400}}]},
   {grado:"5.º · decimales",tipo:"exacto",v:[{items:["pan","leche"],p:{pan:120,leche:350}},{items:["mango","pan"],p:{mango:150,pan:240}}]},
-  {grado:"6.º · descuentos",tipo:"descuento",d:20,v:[{items:["queso","pan"],p:{queso:1000,pan:120},on:"queso"},{items:["palta","leche"],p:{palta:1500,leche:350},on:"palta"}]}
+  {grado:"6.º · descuentos",tipo:"descuento",d:20,v:[{items:["queso","pan"],p:{queso:1000,pan:120},on:"queso"},{items:["leche","pan"],p:{leche:1500,pan:350},on:"leche"}]}
 ];
 const sol=c=>"S/ "+(c/100).toFixed(2);
 function prodMesh(k){
@@ -484,7 +485,7 @@ function prodMesh(k){
   return g;
 }
 const MK=ZONES.market;
-const stalls=[{name:"Frutas",c:0xE0572B,items:["pina","mango","platano"],x:37,z:-2.5},{name:"Verduras",c:0x2E9E5B,items:["papa","choclo","palta"],x:41,z:-12},{name:"Abarrotes",c:0x2F6FD0,items:["pan","leche","queso"],x:37,z:-21.5}];
+const stalls=[{name:"Huerta",c:0xE0572B,items:["pina","mango","platano"],x:37,z:-2.5},{name:"Verduras",c:0x2E9E5B,items:["papa","choclo","palta"],x:41,z:-12},{name:"Abarrotes",c:0x2F6FD0,items:["pan","leche","queso"],x:37,z:-21.5}];
 const products={};const clickables=[];
 stalls.forEach(s=>{
   const g=new THREE.Group();g.position.set(s.x,0,s.z);g.rotation.y=Math.atan2(MK.x-4-s.x,MK.z-s.z);scene.add(g);
@@ -606,7 +607,7 @@ const SP={
   tablet:{name:"Tablet WebAR",color:"#E0572B",face:"tablet"},
   casera:{name:"Casera Rosa",color:"#C2185B",face:"casera",npc:casera},
   apu:{name:"Apu Yachay",color:"#6E62D6",face:"stone"},
-  amaru:{name:"Amaru",color:"#2B2D3A",face:"condor"},
+  amaru:{name:"Amaru",color:"#2B2D3A",face:"kid"},
   docente:{name:"Docente",color:"#22458F",face:"teacher",npc:docente},
   gal:{name:"Galería de logros",color:"#2F6FD0",face:"frame"}
 };
@@ -1028,7 +1029,8 @@ function loop(){
 renderer.setAnimationLoop(loop);
 
 /* ================= Modelos KayKit (rama de prueba) ================= */
-// Modelos CC0 de Kay Lousberg (kaylousberg.com). Si no cargan, el juego vuelve a las piezas procedurales.
+// Todo el mundo usa los packs CC0 de Kay Lousberg (kaylousberg.com) para que el estilo sea uno solo.
+// Si algo no carga, se conserva la pieza procedural original.
 const KK="assets/kaykit/";
 const WEAPONS=/Knife|Crossbow|Axe|Sword|Shield|Mug|Spellbook|Wand|Staff|Throwable/;
 const loadTxt=document.createElement("div");loadTxt.className="fine";loadTxt.textContent="Cargando modelos 3D…";$("#title .box").appendChild(loadTxt);
@@ -1036,9 +1038,15 @@ const gltfLoader=THREE.GLTFLoader?new THREE.GLTFLoader():null;
 const loadG=url=>new Promise((res,rej)=>gltfLoader.load(KK+url,res,undefined,rej));
 function toonify(root){root.traverse(o=>{if(!o.isMesh)return;const one=m=>{const t=new THREE.MeshToonMaterial({color:m.color?m.color.clone():new THREE.Color(0xffffff),map:m.map||null,gradientMap:GRAD,skinning:!!o.isSkinnedMesh});
     if(t.map){t.map.encoding=THREE.LinearEncoding;t.map.needsUpdate=true;}return t;};o.material=Array.isArray(o.material)?o.material.map(one):one(o.material);o.castShadow=true;o.receiveShadow=true;});}
-function fit(obj,size,axis){const b=new THREE.Box3().setFromObject(obj),v=b.getSize(new THREE.Vector3());const cur=axis==="y"?v.y:Math.max(v.x,v.y,v.z);obj.scale.multiplyScalar(size/cur);return obj;}
-function ground(obj){const b=new THREE.Box3().setFromObject(obj);obj.position.y-=b.min.y;return obj;}
-function cloneStatic(g){const c=g.scene.clone(true);toonify(c);return c;}
+function size(obj){return new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3());}
+function fit(obj,s,axis){const v=size(obj);const cur=axis==="y"?v.y:axis==="x"?v.x:Math.max(v.x,v.y,v.z);obj.scale.multiplyScalar(s/cur);return obj;}
+const G={};
+// Coloca una copia del modelo con la base apoyada en y (coordenadas locales del padre)
+function put(name,parent,x,y,z,o){o=o||{};const m=G[name].scene.clone(true);toonify(m);
+  if(o.h)fit(m,o.h,"y");else if(o.w)fit(m,o.w,"x");else if(o.s)fit(m,o.s);
+  m.rotation.y=o.ry||0;m.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(m);
+  m.position.set(x,(y||0)-b.min.y,z);(parent||scene).add(m);return m;}
+function hideMeshes(group,keep){group.children.forEach(c=>{if(keep&&keep.includes(c))return;c.visible=false;});}
 function setChar(k,g){
   const model=THREE.SkeletonUtils.clone(g.scene);model.traverse(o=>{if(WEAPONS.test(o.name))o.visible=false;});toonify(model);fit(model,2.05,"y");
   k.hips.visible=false;k.root.add(model);k.model=model;k.mixer=new THREE.AnimationMixer(model);k.actions={};
@@ -1054,40 +1062,98 @@ animKid=function(k,dt,speed,air){
     const a=k.actions[k.cur];if(a)a.timeScale=k.cur==="Walking_A"?Math.max(.7,Math.min(1.6,speed/3.4)):k.cur==="Running_A"?Math.max(.8,speed/8):1;}
   k.mixer.update(dt);
 };
-// el avatar celebra cuando acierta
 const _logEvent=logEvent;logEvent=function(ev,cat){_logEvent(ev,cat);if(ev.resultado==="correcta")setTimeout(()=>oneShot(player,"Cheer"),250);};
+// Estandartes de las puertas: el color indica el estado de la zona
+const BANNER={done:"banner_patternA_green",prog:"banner_patternA_yellow",lock:"banner_patternA_brown",open:"banner_patternA_blue",ref:"banner_patternA_red",hidden:"banner_patternA_red"};
+function kkBanner(k){const z=Z[k];if(!z.g||!G.banner_patternA_green)return;if(z.kkBan)z.g.remove(z.kkBan);z.kkBan=put(BANNER[z.s],z.g,0,1.9,.2,{h:2.2});}
+const _setZone=setZone;setZone=function(k,s){_setZone(k,s);kkBanner(k);};
+// Amaru pasa a ser un personaje KayKit que mira al jugador
+const amaruK=kid({hat:"chullo"});amaruK.root.position.set(6.5,0,-3);
+(function extraLoop(){let last=performance.now();function f(){const now=performance.now(),dt=Math.min(.05,(now-last)/1000);last=now;
+  if(amaruK.mixer){amaruK.anim.talk=am.talk?1:0;animKid(amaruK,dt,0,false);amaruK.root.rotation.y=angDamp(amaruK.root.rotation.y,Math.atan2(PL.pos.x-6.5,PL.pos.z+3),3,dt);}
+  requestAnimationFrame(f);}requestAnimationFrame(f);})();
 (async function loadKayKit(){
   if(!gltfLoader||!THREE.SkeletonUtils){fallback();return;}
   try{
-    const names=["Rogue","Rogue_Hooded","Mage","Knight","Barbarian"];let done=0;
-    const chars=await Promise.all(names.map(n=>loadG("personajes/"+n+".glb").then(g=>{loadTxt.textContent=`Cargando modelos 3D… ${++done}/${names.length}`;return g;})));
-    const C=Object.fromEntries(names.map((n,i)=>[n,chars[i]]));
-    setChar(player,C.Rogue);setChar(docente,C.Mage);setChar(casera,C.Rogue_Hooded);
-    [C.Knight,C.Barbarian,C.Rogue_Hooded,C.Rogue].forEach((g,i)=>setChar(peers[i].k,g));
-    const env=["trees_A_large","trees_B_large","tree_single_A","tree_single_B","rock_single_A","rock_single_C","mountain_A_grass_trees","mountain_B_grass","building_home_A_yellow","building_windmill_yellow","barrel","crate_A_big"];
-    const E={};(await Promise.all(env.map(n=>loadG("escenario/"+n+".gltf")))).forEach((g,i)=>E[env[i]]=g);
-    SPOTS.trees.forEach((t,i)=>{const src=i%5===0?(t.kind==="round"?E.trees_A_large:E.trees_B_large):(t.kind==="round"?E.tree_single_A:E.tree_single_B);const m=cloneStatic(src);fit(m,(t.kind==="round"?5.2:5.6)*t.s,"y");ground(m);m.position.x=t.x;m.position.z=t.z;m.rotation.y=t.rot;scene.add(m);});
-    SPOTS.rocks.forEach((r,i)=>{const m=cloneStatic(i%2?E.rock_single_A:E.rock_single_C);fit(m,1.9*r.s);ground(m);m.position.x=r.x;m.position.z=r.z;m.rotation.y=r.rot;scene.add(m);});
-    SPOTS.mtns.forEach(bakeMountain);flushBatch();
-    // aldea alrededor de la isla
-    [[-46,14,.6,"building_home_A_yellow"],[-40,28,2.4,"building_windmill_yellow"],[44,26,-.5,"building_home_A_yellow"],[-55,-28,1.2,"building_home_A_yellow"]].forEach(([x,z,r,n])=>{const m=cloneStatic(E[n]);fit(m,n.includes("windmill")?11:7,"y");ground(m);m.position.x=x;m.position.z=z;m.rotation.y=r;scene.add(m);col(x,z,n.includes("windmill")?3.5:3);});
-    [[29,-5],[29,-19.5],[44.5,-6],[44.5,-18]].forEach(([x,z],i)=>{const m=cloneStatic(i%2?E.barrel:E.crate_A_big);fit(m,1.2,"y");ground(m);m.position.x=x;m.position.z=z;scene.add(m);col(x,z,.8);});
-    // comida del mercado
-    const food={papa:"food_ingredient_potato",queso:"food_ingredient_cheese",pan:"food_ingredient_bun"};
-    const F={};(await Promise.all(Object.values(food).concat(["crate_potatoes","crate_tomatoes","crate_carrots"]).map(n=>loadG("comida/"+n+".gltf").then(g=>F[n]=g))));
-    Object.entries(food).forEach(([k,n])=>{const pm=products[k].mesh;while(pm.children.length)pm.remove(pm.children[0]);[-.12,.12,0].forEach((dx,j)=>{const m=cloneStatic(F[n]);fit(m,.32);ground(m);m.position.set(dx,0,j===2?-.14:.06);pm.add(m);});});
-    [["crate_potatoes",36.2,-9.6],["crate_tomatoes",38,-13.5],["crate_carrots",35.4,-17]].forEach(([n,x,z])=>{const m=cloneStatic(F[n]);fit(m,1.1);ground(m);m.position.x=x;m.position.z=z;m.rotation.y=-1.2;scene.add(m);});
+    const charNames=["Rogue","Rogue_Hooded","Mage","Knight","Barbarian"];
+    const files={
+      escenario:["trees_A_large","trees_B_large","tree_single_A","tree_single_B","rock_single_A","rock_single_C","building_home_A_yellow","building_home_B_blue","building_home_B_red","building_windmill_yellow","building_tavern_red","building_well_blue","building_market_red","building_market_green","building_market_blue","barrel","crate_A_big","cloud_big","cloud_small"],
+      halloween:["arch","shrine_candles","bench","lantern_standing","post_lantern","pumpkin_orange_small","pumpkin_orange","tree_pine_orange_large","tree_pine_yellow_large","fence_pillar"],
+      comida:["food_ingredient_potato","food_ingredient_cheese","food_ingredient_bun","food_ingredient_carrot","food_ingredient_tomato","food_ingredient_onion","food_ingredient_lettuce","food_ingredient_ham","crate_potatoes","crate_tomatoes","crate_carrots","crate_cheese","crate_onions","kitchentable_A_large"],
+      muebles:["table_medium","chair_A","shelf_B_large_decorated","book_set"],
+      dungeon:["banner_patternA_green.gltf","banner_patternA_yellow.gltf","banner_patternA_brown.gltf","banner_patternA_blue.gltf","banner_patternA_red.gltf","coin_stack_large.gltf","torch_lit.gltf","chest_gold"]
+    };
+    const jobs=[];charNames.forEach(n=>jobs.push(["char:"+n,"personajes/"+n+".glb"]));
+    Object.entries(files).forEach(([dir,list])=>list.forEach(n=>jobs.push([n.replace(".gltf",""),dir+"/"+n+(dir==="dungeon"?".glb":".gltf")])));
+    let done=0;await Promise.all(jobs.map(([key,url])=>loadG(url).then(g=>{G[key]=g;loadTxt.textContent=`Cargando modelos 3D… ${++done}/${jobs.length}`;})));
+    /* personajes */
+    setChar(player,G["char:Rogue"]);setChar(docente,G["char:Mage"]);setChar(casera,G["char:Rogue_Hooded"]);
+    [G["char:Barbarian"],G["char:Rogue_Hooded"],G["char:Mage"],G["char:Rogue"]].forEach((g,i)=>setChar(peers[i].k,g));
+    scene.add(amaruK.root);setChar(amaruK,G["char:Knight"]);amaru.children.forEach(c=>c.visible=false);
+    llamas.forEach(o=>o.l.root.visible=false);
+    /* naturaleza: se ocultan los lotes procedurales de bancos, arbustos y bosque decorativo */
+    const hideColors=[0xA0703F,0x7A5233,0x3F8F55,0x6DBB55,0x7FCB60];
+    scene.children.forEach(c=>{if(c.isMesh&&c.material&&!Array.isArray(c.material)&&c.material.color&&c.geometry&&!c.geometry.index&&hideColors.includes(c.material.color.getHex()))c.visible=false;});
+    SPOTS.trees.forEach((t,i)=>{const n=i%7===0?"tree_pine_orange_large":i%7===3?"tree_pine_yellow_large":i%5===0?(t.kind==="round"?"trees_A_large":"trees_B_large"):(t.kind==="round"?"tree_single_A":"tree_single_B");put(n,null,t.x,0,t.z,{h:(n.includes("pine")?5.4:5.2)*t.s,ry:t.rot});});
+    SPOTS.rocks.forEach((r,i)=>put(i%2?"rock_single_A":"rock_single_C",null,r.x,0,r.z,{s:1.9*r.s,ry:r.rot}));
+    [[-4.5,1],[-5.5,-1.5],[-3.6,-2.6]].forEach(([x,z],i)=>put(i===1?"tree_pine_yellow_large":"tree_single_B",null,ZONES.sumas.x+x,0,ZONES.sumas.z+z,{h:4}));
+    clouds.forEach((c,i)=>{c.children.forEach(s=>s.visible=false);put(i%2?"cloud_big":"cloud_small",c,0,0,0,{w:16});});
+    /* plaza: pozo, bancos y faroles */
+    scene.children.forEach(c=>{if(c.isMesh&&Math.abs(c.position.x)<.01&&Math.abs(c.position.z)<.01&&c.position.y>.5&&c.position.y<3.5)c.visible=false;});spray.forEach(d=>d.visible=false);
+    put("building_well_blue",null,0,.3,0,{h:4.2});
+    [[0,8.5,0],[-8.5,0,Math.PI/2],[8.5,0,-Math.PI/2],[0,-8.5,Math.PI]].forEach(([x,z,r])=>put("bench",null,x,.3,z,{w:2.8,ry:r}));
+    for(let i=0;i<6;i++){const a=i/6*Math.PI*2+.5;put("lantern_standing",null,Math.cos(a)*11.6,.3,Math.sin(a)*11.6,{h:2.6});col(Math.cos(a)*11.6,Math.sin(a)*11.6,.4);}
+    [[3,-14],[-3,-22],[3,-35],[-4,-47],[8,-60],[-12,-14.5],[-19,-16],[12,-14],[20,-14],[4.6,19],[-4.6,26]].forEach(([x,z])=>{put("post_lantern",null,x,0,z,{h:3.2});col(x,z,.35);});
+    /* aldea */
+    [[-46,14,.6,"building_home_A_yellow",7],[-40,28,2.4,"building_windmill_yellow",11],[44,26,-.5,"building_home_B_red",7.5],[-55,-28,1.2,"building_home_B_blue",7.5],[52,-34,-1,"building_tavern_red",8],[-24,40,2,"building_home_A_yellow",7]].forEach(([x,z,r,n,h])=>{put(n,null,x,0,z,{h,ry:r});col(x,z,n.includes("windmill")?3.5:3.2);});
+    /* Aula AR al aire libre: escuela de fondo, mesa, sillas y estantes */
+    const keepAR=[desk];arG.children.forEach(c=>{if(c.material&&c.material.map===boardT){keepAR.push(c);c.position.y=1.9;}});hideMeshes(arG,keepAR);
+    [-3.15,3.15].forEach(x=>put("fence_pillar",arG,x,0,-4.3,{h:3.3}));
+    for(let i=colliders.length-1;i>=0;i--){const c=colliders[i];if(Math.hypot(c.x-AR.x,c.z-AR.z)<7.5&&c.r!==2)colliders.splice(i,1);}
+    desk.children.forEach(c=>{if(c.isMesh&&c!==paper)c.visible=false;});
+    {const t=put("table_medium",desk,0,0,0,{});const ts=size(t);t.scale.set(t.scale.x*3.2/ts.x,t.scale.y*.97/ts.y,t.scale.z*1.8/ts.z);}
+    [[-1.8,1.5],[0,1.7],[1.8,1.5]].forEach(([x,z])=>put("chair_A",desk,x,0,z,{h:1.2,ry:Math.PI}));
+    put("book_set",desk,1.25,.97,-.55,{w:.6});
+    put("building_tavern_red",arG,0,0,-8,{h:8});
+    [[-4.4,-4.2],[4.4,-4.2]].forEach(([x,z])=>{put("shelf_B_large_decorated",arG,x,0,z,{h:2.6});const p=wpos(arG,x,0,z);col(p.x,p.z,1);});
+    {const p=wpos(arG,0,0,-8);col(p.x,p.z,4);}
+    /* mercado */
+    const COLORS=["building_market_red","building_market_green","building_market_blue"];
+    stalls.forEach((s,si)=>{const g=products[s.items[0]].mesh.parent;const keep=[];s.items.forEach(k=>{keep.push(products[k].mesh,products[k].spark);});hideMeshes(g,keep);
+      const t=put("kitchentable_A_large",g,0,0,0,{});const ts=size(t);t.scale.set(t.scale.x*4.6/ts.x,t.scale.y*1.02/ts.y,t.scale.z*1.6/ts.z);
+      put(COLORS[si],g,0,0,-2.8,{h:6.5});});
+    const FOOD={pina:"pumpkin_orange_small",mango:"food_ingredient_tomato",platano:"food_ingredient_carrot",papa:"food_ingredient_potato",choclo:"food_ingredient_onion",palta:"food_ingredient_lettuce",pan:"food_ingredient_bun",leche:"food_ingredient_ham",queso:"food_ingredient_cheese"};
+    Object.entries(FOOD).forEach(([k,n])=>{const pm=products[k].mesh;while(pm.children.length)pm.remove(pm.children[0]);const big=k==="pina"||k==="palta"||k==="queso"||k==="leche";
+      (big?[[0,0]]:[[-.12,.06],[.12,.06],[0,-.12]]).forEach(([dx,dz])=>put(n,pm,dx,0,dz,{s:big?.42:.3,ry:dx*9}));});
+    [["crate_potatoes",36.2,-9.6],["crate_tomatoes",38,-13.5],["crate_carrots",35.4,-17],["crate_onions",33.5,-4.5],["crate_cheese",33.5,-19.8],["pumpkin_orange",34.8,-1.5]].forEach(([n,x,z])=>{put(n,null,x,0,z,{s:1.1,ry:-1.2});col(x,z,.7);});
+    hideMeshes(booth,[]);{const t=put("kitchentable_A_large",booth,0,0,0,{});const ts=size(t);t.scale.set(t.scale.x*2.4/ts.x,t.scale.y*1.05/ts.y,t.scale.z*1/ts.z);put("coin_stack_large",booth,.6,1.05,0,{h:.35});}
+    [[29,-5],[29,-19.5],[44.5,-6],[44.5,-18]].forEach(([x,z],i)=>{put(i%2?"barrel":"crate_A_big",null,x,0,z,{h:1.2});col(x,z,.8);});
+    /* puertas de la ruta: arcos, estandartes y santuarios */
+    ["sumas","restas","multi"].forEach(k=>{const z=Z[k];hideMeshes(z.g,[z.apu.g]);put("arch",z.g,0,0,0,{w:5.2});kkBanner(k);hideMeshes(z.apu.g,[]);put("shrine_candles",z.apu.g,0,0,0,{h:1.9});});
+    [apuTop,apuRef].forEach(a=>{hideMeshes(a.g,[]);put("shrine_candles",a.g,0,0,0,{h:1.9});});
+    {const m=ZONES.multi;scene.children.forEach(c=>{if(c.isMesh&&Math.hypot(c.position.x-(m.x-5.4),c.position.z-(m.z-.6))<2.2)c.visible=false;});
+      put("crate_tomatoes",null,m.x-5,0,m.z+.4,{s:1.1});put("crate_carrots",null,m.x-5,0,m.z-1.6,{s:1.1});put("crate_cheese",null,m.x-6.3,0,m.z-.6,{s:1.1});}
+    /* cima: cofre dorado en lugar del sol */
+    hideMeshes(inti,[apuTop.g]);put("chest_gold",inti,0,0,0,{h:1.4});[[-1.4,.6],[1.5,.4],[.2,-1.4]].forEach(([x,z])=>put("coin_stack_large",inti,x,0,z,{h:.5}));
+    [[-3,1],[3,1]].forEach(([x,z])=>put("torch_lit",inti,x,0,z,{h:2.2}));
+    refG.children.forEach(c=>{if(c.geometry&&c.geometry.type==="SphereGeometry")c.visible=false;});put("pumpkin_orange",refG,1,.7,.6,{s:1});put("crate_A_big",refG,-.4,.7,1.4,{h:.9});
+    /* galería */
+    hideMeshes(galG,galG.children.filter(c=>c.type==="Group"));
+    for(let i=0;i<4;i++)put("fence_pillar",galG,-5.4+i*3.6,0,-3.6,{h:1.6});
+    put("building_home_B_blue",galG,0,0,-9,{h:8});
+    [[-8,-1],[8,-1]].forEach(([x,z])=>put("lantern_standing",galG,x,0,z,{h:2.6}));
     loadTxt.textContent="Modelos 3D: KayKit de Kay Lousberg (CC0)";
   }catch(err){console.warn("KayKit no cargó",err);fallback();}
-  function fallback(){SPOTS.trees.forEach(bakeTree);SPOTS.rocks.forEach(bakeRock);SPOTS.mtns.forEach(bakeMountain);flushBatch();loadTxt.textContent="No se pudieron cargar los modelos 3D; se muestra la versión básica.";}
+  function fallback(){SPOTS.trees.forEach(bakeTree);SPOTS.rocks.forEach(bakeRock);flushBatch();loadTxt.textContent="No se pudieron cargar los modelos 3D; se muestra la versión básica.";}
 })();
+SPOTS.mtns.forEach(bakeMountain);flushBatch();
 
 /* ================= Inicio ================= */
 function begin(){if(started)return;started=true;const f=$("#fade");f.style.opacity=1;setTimeout(()=>{$("#title").hidden=true;["#quest","#tr"].forEach(s=>$(s).hidden=false);$("#keys").hidden=isTouch;$("#joy").hidden=!isTouch;$("#mbtn").hidden=!isTouch;
   camPos.set(PL.pos.x,6,PL.pos.z+12);renderQuest();f.style.opacity=0;setTimeout(()=>toast("Sigue el rayo dorado hasta tu primera misión"),400);},420);}
 $("#play").onclick=begin;
 mkSetup();refreshGallery();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{refreshGallery();});
-window.__isla={PL,begin,arActivity,talkCasera,talkApu,talkAmaru,talkDocente,talkGallery,takeProduct,openPanel,mkt,Z,LOG,D,advance};
+window.__isla={CAM,PL,begin,arActivity,talkCasera,talkApu,talkAmaru,talkDocente,talkGallery,takeProduct,openPanel,mkt,Z,LOG,D,advance};
 })();
 </script>
 </body>
