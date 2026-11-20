@@ -45,3 +45,13 @@ Una sola página HTML con [three.js r128](https://threejs.org/) (MeshToonMateria
 | ![Exploración](capturas/02-plaza.jpg) | ![Aula AR](capturas/03-aula-ar.jpg) |
 | ![Resultado](capturas/04-resultado-ar.jpg) | ![Mercado](capturas/05-mercado-vr.jpg) |
 | ![Reto del Apu](capturas/06-reto-apu.jpg) | ![Panel del sistema](capturas/08-panel-sistema.jpg) |
+
+## Rama de prueba: modelos KayKit
+
+En la rama `prueba-modelos-kaykit` los personajes, árboles, rocas, casas y parte de la comida del mercado usan modelos de los packs **KayKit** de Kay Lousberg ([kaylousberg.com](https://kaylousberg.com)), con licencia CC0. Están en `assets/kaykit/` junto con su licencia. Si los modelos no cargan, el juego vuelve a las piezas procedurales de la rama `main`.
+
+Para probarla en local hace falta un servidor, porque el navegador no carga modelos desde `file://`:
+
+```bash
+python -m http.server 8765
+```

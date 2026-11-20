@@ -197,6 +197,8 @@ table.t tr.hit td{background:rgba(255,201,60,.14);font-weight:800}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/effects/OutlineEffect.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
 <script>
 (function(){
 "use strict";
@@ -300,21 +302,27 @@ mk(new THREE.CylinderGeometry(.35,.5,2.2,10),T(0xC9B48F),0,2,0);mk(new THREE.Cyl
 const spray=[];for(let i=0;i<16;i++){const d=mk(SPH_LO,T(0xCFF3FF,{ol:false}),0,0,0,null,.14);d.castShadow=false;d.userData.ph=i/16;spray.push(d);}
 col(0,0,3.2);
 [[0,8.5,0],[-8.5,0,Math.PI/2],[8.5,0,Math.PI/2]].forEach(([x,z,r])=>{bake(BOX,0xA0703F,x,.55,z,2.6,.18,.7,0,r,0);bake(BOX,0x7A5233,x+(r?0:-1),.28,z+(r?-1:0),.18,.55,.6,0,r,0);bake(BOX,0x7A5233,x+(r?0:1),.28,z+(r?1:0),.18,.55,.6,0,r,0);col(x,z,1.2);});
+// Rama de prueba: árboles, rocas y montañas se guardan como posiciones y se llenan con modelos KayKit al cargar
+const SPOTS={trees:[],rocks:[],mtns:[]};
 // montañas
 for(let i=0;i<24;i++){const a=i/24*Math.PI*2+.2,r=160+((i*37)%5)*14,h=46+((i*53)%7)*10,rad=24+((i*29)%4)*7,x=Math.cos(a)*r,z=Math.sin(a)*r;
-  bake(CONE6,i%3?0x6FA06A:0x8C8A78,x,h/2-4,z,rad,h,rad,0,i,0);if(h>62)bake(CONE6,0xFFFFFF,x,h-4-h*.15+.6,z,rad*.34,h*.3,rad*.34,0,i,0);}
+  SPOTS.mtns.push({x,z,h,rad,i});}
+function bakeMountain(m){const {x,z,h,rad,i}=m;bake(CONE6,i%3?0x6FA06A:0x8C8A78,x,h/2-4,z,rad,h,rad,0,i,0);if(h>62)bake(CONE6,0xFFFFFF,x,h-4-h*.15+.6,z,rad*.34,h*.3,rad*.34,0,i,0);}
+function bakeTree(t){const {x,z,s}=t;if(t.kind==="round"){bake(CYL6,0x7A5233,x,.9*s,z,.28*s,1.8*s,.28*s);const c=t.c;bake(ICO,c,x,2.7*s,z,1.5*s);bake(ICO,c===0x5DAF4E?0x6FC25A:0x5DAF4E,x+.7*s,2.3*s,z+.3*s,1.05*s);bake(ICO,0x6FC25A,x-.6*s,3.3*s,z-.2*s,.9*s);}
+  else{bake(CYL6,0x7A5233,x,.6*s,z,.22*s,1.2*s,.22*s);[0,1,2].forEach(k=>bake(CONE6,k===1?0x3F8F55:0x357F4A,x,(1.6+k*1.1)*s,z,(1.5-k*.35)*s,1.8*s,(1.5-k*.35)*s,0,k,0));}}
+function bakeRock(r){bake(DOD,0xA7A396,r.x,r.s*.4,r.z,r.s,r.s*.75,r.s,0,r.rot,0);}
 // árboles, arbustos, flores y rocas
 (function nature(){let seed=11;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
   const avoid=[[0,0,15],[-30,-12,12],[33,-12,15],[0,34,13],[0,-28,6],[-9,-41,6],[3,-54,7],[17,-46,7],[0,-77,13],[6.5,-3,3]];
   const ok=(x,z,pad)=>{if(avoid.some(([ax,az,ar])=>Math.hypot(x-ax,z-az)<ar+pad))return false;if(Math.abs(x)<4+pad&&z<4&&z>-75)return false;if(Math.abs(z+10.5)<3.5+pad&&Math.abs(x)<28)return false;if(Math.abs(x)<3.5+pad&&z>0&&z<30)return false;if(z<-62&&Math.abs(x)<17)return false;return true;};
   let n=0,g=0;while(n<78&&g<6000){g++;const a=rnd()*6.283,r=15+rnd()*68,x=Math.cos(a)*r,z=Math.sin(a)*r;if(!ok(x,z,1.5))continue;const s=.8+rnd()*.6;
-    if(rnd()<.6){bake(CYL6,0x7A5233,x,.9*s,z,.28*s,1.8*s,.28*s);const c=rnd()<.5?0x5DAF4E:0x4C9D45;bake(ICO,c,x,2.7*s,z,1.5*s);bake(ICO,c===0x5DAF4E?0x6FC25A:0x5DAF4E,x+.7*s,2.3*s,z+.3*s,1.05*s);bake(ICO,0x6FC25A,x-.6*s,3.3*s,z-.2*s,.9*s);}
-    else{bake(CYL6,0x7A5233,x,.6*s,z,.22*s,1.2*s,.22*s);[0,1,2].forEach(k=>bake(CONE6,k===1?0x3F8F55:0x357F4A,x,(1.6+k*1.1)*s,z,(1.5-k*.35)*s,1.8*s,(1.5-k*.35)*s,0,k,0));}
+    if(rnd()<.6){const c=rnd()<.5?0x5DAF4E:0x4C9D45;SPOTS.trees.push({x,z,s,kind:"round",c,rot:x*7%6.28});}
+    else SPOTS.trees.push({x,z,s,kind:"pine",rot:z*5%6.28});
     col(x,z,.7*s);n++;}
   for(let i=0;i<70;i++){const a=rnd()*6.283,r=13+rnd()*72,x=Math.cos(a)*r,z=Math.sin(a)*r;if(!ok(x,z,.5))continue;bake(ICO,rnd()<.5?0x6DBB55:0x7FCB60,x,.45,z,.7+rnd()*.4,.55,.7+rnd()*.4);}
   const fc=[0xFF7AA8,0xFFD23F,0xFFFFFF,0xB28DFF,0xFF8C42];
   for(let i=0;i<160;i++){const a=rnd()*6.283,r=12+rnd()*74,x=Math.cos(a)*r,z=Math.sin(a)*r;if(!ok(x,z,0))continue;bake(CYL6,0x4C9D45,x,.18,z,.03,.36,.03);bake(SPH_LO,fc[i%5],x,.4,z,.11);}
-  for(let i=0;i<30;i++){const a=rnd()*6.283,r=20+rnd()*66,x=Math.cos(a)*r,z=Math.sin(a)*r;if(!ok(x,z,1))continue;const s=.5+rnd()*1.1;bake(DOD,0xA7A396,x,s*.4,z,s,s*.75,s,0,rnd()*3,0);col(x,z,s*.8);}
+  for(let i=0;i<30;i++){const a=rnd()*6.283,r=20+rnd()*66,x=Math.cos(a)*r,z=Math.sin(a)*r;if(!ok(x,z,1))continue;const s=.5+rnd()*1.1;SPOTS.rocks.push({x,z,s,rot:rnd()*3});col(x,z,s*.8);}
 })();
 // nubes
 const clouds=[];for(let i=0;i<10;i++){const g=new THREE.Group();[[0,0,0,4],[3.6,-.6,.4,3],[-3.4,-.8,-.2,2.8],[1.4,1.4,0,2.6],[-1.2,1,.6,2.2]].forEach(([x,y,z,r])=>{const s=mk(SPH_LO,T(0xFFFFFF),x,y,z,g,r);s.castShadow=false;s.receiveShadow=false;});g.position.set(-180+i*38,52+(i%3)*8,-130+((i*53)%260));scene.add(g);clouds.push(g);}
@@ -1018,6 +1026,61 @@ function loop(){
   if(outline)outline.render(scene,camera);else renderer.render(scene,camera);
 }
 renderer.setAnimationLoop(loop);
+
+/* ================= Modelos KayKit (rama de prueba) ================= */
+// Modelos CC0 de Kay Lousberg (kaylousberg.com). Si no cargan, el juego vuelve a las piezas procedurales.
+const KK="assets/kaykit/";
+const WEAPONS=/Knife|Crossbow|Axe|Sword|Shield|Mug|Spellbook|Wand|Staff|Throwable/;
+const loadTxt=document.createElement("div");loadTxt.className="fine";loadTxt.textContent="Cargando modelos 3D…";$("#title .box").appendChild(loadTxt);
+const gltfLoader=THREE.GLTFLoader?new THREE.GLTFLoader():null;
+const loadG=url=>new Promise((res,rej)=>gltfLoader.load(KK+url,res,undefined,rej));
+function toonify(root){root.traverse(o=>{if(!o.isMesh)return;const one=m=>{const t=new THREE.MeshToonMaterial({color:m.color?m.color.clone():new THREE.Color(0xffffff),map:m.map||null,gradientMap:GRAD,skinning:!!o.isSkinnedMesh});
+    if(t.map){t.map.encoding=THREE.LinearEncoding;t.map.needsUpdate=true;}return t;};o.material=Array.isArray(o.material)?o.material.map(one):one(o.material);o.castShadow=true;o.receiveShadow=true;});}
+function fit(obj,size,axis){const b=new THREE.Box3().setFromObject(obj),v=b.getSize(new THREE.Vector3());const cur=axis==="y"?v.y:Math.max(v.x,v.y,v.z);obj.scale.multiplyScalar(size/cur);return obj;}
+function ground(obj){const b=new THREE.Box3().setFromObject(obj);obj.position.y-=b.min.y;return obj;}
+function cloneStatic(g){const c=g.scene.clone(true);toonify(c);return c;}
+function setChar(k,g){
+  const model=THREE.SkeletonUtils.clone(g.scene);model.traverse(o=>{if(WEAPONS.test(o.name))o.visible=false;});toonify(model);fit(model,2.05,"y");
+  k.hips.visible=false;k.root.add(model);k.model=model;k.mixer=new THREE.AnimationMixer(model);k.actions={};
+  g.animations.forEach(c=>{k.actions[c.name]=k.mixer.clipAction(c);});k.cur=null;playAct(k,"Idle",0);
+}
+function playAct(k,name,fade){if(k.cur===name||!k.actions[name])return;const a=k.actions[name],p=k.actions[k.cur];a.reset();a.setLoop(THREE.LoopRepeat);a.fadeIn(fade===undefined?.22:fade).play();if(p)p.fadeOut(fade===undefined?.22:fade);k.cur=name;}
+function oneShot(k,name){if(!k.mixer||!k.actions[name])return;const a=k.actions[name],p=k.actions[k.cur];a.reset();a.setLoop(THREE.LoopOnce,1);a.clampWhenFinished=true;a.fadeIn(.15).play();if(p&&p!==a)p.fadeOut(.15);k.cur=name;k.lock=a.getClip().duration*.95;}
+const _animKid=animKid;
+animKid=function(k,dt,speed,air){
+  if(!k.mixer)return _animKid(k,dt,speed,air);
+  if(k.lock>0){k.lock-=dt;}
+  else{let n="Idle";if(air)n="Jump_Idle";else if(speed>8)n="Running_A";else if(speed>.6)n="Walking_A";else if(k.anim.talk>0)n="Interact";playAct(k,n);
+    const a=k.actions[k.cur];if(a)a.timeScale=k.cur==="Walking_A"?Math.max(.7,Math.min(1.6,speed/3.4)):k.cur==="Running_A"?Math.max(.8,speed/8):1;}
+  k.mixer.update(dt);
+};
+// el avatar celebra cuando acierta
+const _logEvent=logEvent;logEvent=function(ev,cat){_logEvent(ev,cat);if(ev.resultado==="correcta")setTimeout(()=>oneShot(player,"Cheer"),250);};
+(async function loadKayKit(){
+  if(!gltfLoader||!THREE.SkeletonUtils){fallback();return;}
+  try{
+    const names=["Rogue","Rogue_Hooded","Mage","Knight","Barbarian"];let done=0;
+    const chars=await Promise.all(names.map(n=>loadG("personajes/"+n+".glb").then(g=>{loadTxt.textContent=`Cargando modelos 3D… ${++done}/${names.length}`;return g;})));
+    const C=Object.fromEntries(names.map((n,i)=>[n,chars[i]]));
+    setChar(player,C.Rogue);setChar(docente,C.Mage);setChar(casera,C.Rogue_Hooded);
+    [C.Knight,C.Barbarian,C.Rogue_Hooded,C.Rogue].forEach((g,i)=>setChar(peers[i].k,g));
+    const env=["trees_A_large","trees_B_large","tree_single_A","tree_single_B","rock_single_A","rock_single_C","mountain_A_grass_trees","mountain_B_grass","building_home_A_yellow","building_windmill_yellow","barrel","crate_A_big"];
+    const E={};(await Promise.all(env.map(n=>loadG("escenario/"+n+".gltf")))).forEach((g,i)=>E[env[i]]=g);
+    SPOTS.trees.forEach((t,i)=>{const src=i%5===0?(t.kind==="round"?E.trees_A_large:E.trees_B_large):(t.kind==="round"?E.tree_single_A:E.tree_single_B);const m=cloneStatic(src);fit(m,(t.kind==="round"?5.2:5.6)*t.s,"y");ground(m);m.position.x=t.x;m.position.z=t.z;m.rotation.y=t.rot;scene.add(m);});
+    SPOTS.rocks.forEach((r,i)=>{const m=cloneStatic(i%2?E.rock_single_A:E.rock_single_C);fit(m,1.9*r.s);ground(m);m.position.x=r.x;m.position.z=r.z;m.rotation.y=r.rot;scene.add(m);});
+    SPOTS.mtns.forEach(bakeMountain);flushBatch();
+    // aldea alrededor de la isla
+    [[-46,14,.6,"building_home_A_yellow"],[-40,28,2.4,"building_windmill_yellow"],[44,26,-.5,"building_home_A_yellow"],[-55,-28,1.2,"building_home_A_yellow"]].forEach(([x,z,r,n])=>{const m=cloneStatic(E[n]);fit(m,n.includes("windmill")?11:7,"y");ground(m);m.position.x=x;m.position.z=z;m.rotation.y=r;scene.add(m);col(x,z,n.includes("windmill")?3.5:3);});
+    [[29,-5],[29,-19.5],[44.5,-6],[44.5,-18]].forEach(([x,z],i)=>{const m=cloneStatic(i%2?E.barrel:E.crate_A_big);fit(m,1.2,"y");ground(m);m.position.x=x;m.position.z=z;scene.add(m);col(x,z,.8);});
+    // comida del mercado
+    const food={papa:"food_ingredient_potato",queso:"food_ingredient_cheese",pan:"food_ingredient_bun"};
+    const F={};(await Promise.all(Object.values(food).concat(["crate_potatoes","crate_tomatoes","crate_carrots"]).map(n=>loadG("comida/"+n+".gltf").then(g=>F[n]=g))));
+    Object.entries(food).forEach(([k,n])=>{const pm=products[k].mesh;while(pm.children.length)pm.remove(pm.children[0]);[-.12,.12,0].forEach((dx,j)=>{const m=cloneStatic(F[n]);fit(m,.32);ground(m);m.position.set(dx,0,j===2?-.14:.06);pm.add(m);});});
+    [["crate_potatoes",36.2,-9.6],["crate_tomatoes",38,-13.5],["crate_carrots",35.4,-17]].forEach(([n,x,z])=>{const m=cloneStatic(F[n]);fit(m,1.1);ground(m);m.position.x=x;m.position.z=z;m.rotation.y=-1.2;scene.add(m);});
+    loadTxt.textContent="Modelos 3D: KayKit de Kay Lousberg (CC0)";
+  }catch(err){console.warn("KayKit no cargó",err);fallback();}
+  function fallback(){SPOTS.trees.forEach(bakeTree);SPOTS.rocks.forEach(bakeRock);SPOTS.mtns.forEach(bakeMountain);flushBatch();loadTxt.textContent="No se pudieron cargar los modelos 3D; se muestra la versión básica.";}
+})();
 
 /* ================= Inicio ================= */
 function begin(){if(started)return;started=true;const f=$("#fade");f.style.opacity=1;setTimeout(()=>{$("#title").hidden=true;["#quest","#tr"].forEach(s=>$(s).hidden=false);$("#keys").hidden=isTouch;$("#joy").hidden=!isTouch;$("#mbtn").hidden=!isTouch;
